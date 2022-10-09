@@ -1,6 +1,3 @@
-from dis import Instruction
-from logging import exception
-from sre_constants import MAX_UNTIL
 from rich import print
 
 from dataclasses import dataclass
@@ -53,9 +50,12 @@ class Console:
         self.max_loc = len(self.instructions)
         self.visited = list()
 
+    def __repr__(self):
+        return f"{self.accumlator=},{self.location=}"
+
     def process_intruction(self):
         next_instr = self.instructions[self.location]
-        print(f"{self.location=}", next_instr, end=" ")
+        print(f"{self}", next_instr, end=" ")
         if next_instr.name == "nop":
             self.location += 1
         elif next_instr.name == "jmp":
@@ -66,21 +66,43 @@ class Console:
         else:
             raise TypeError("Invalid instruction")
 
-        if self.location >= self.max_loc:
-            raise exception("invalid location")
-        print(f"{self.accumlator=}")
-
-    def run(self):
+    def run_terminated(self):
         while self.location not in self.visited:
             self.visited.append(self.location)
             self.process_intruction()
+            if self.location >= self.max_loc:
+                print("program terminated")
+                print(self)
+                return True
 
         print(f"visted {self.location} again, done!{self.accumlator=}")
+        return False
+
+
+def find_wrong_instruction(program: list[str]):
+    for i, instruction in enumerate(program):
+        current_ins = Instr(instruction)
+        if current_ins.name == "nop":
+            testprogram1 = program.copy()
+            testprogram1[i] = "jmp" + " " + str(current_ins.value)
+            if Console(testprogram1).run_terminated():
+                print(i, instruction, "nop->jmp")
+                break
+        elif current_ins.name == "jmp":
+            testprogram1 = program.copy()
+            testprogram1[i] = "nop" + " " + str(current_ins.value)
+            if Console(testprogram1).run_terminated():
+                print(i, instruction, "jmp->nop")
+                break
 
 
 test_console = Console(testprogram)
 print(test_console)
-test_console.run()
+test_console.run_terminated()
 
 console = Console(program)
-console.run()
+console.run_terminated()
+
+find_wrong_instruction(testprogram)
+
+find_wrong_instruction(program)
