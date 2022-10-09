@@ -4,4 +4,3 @@
 
 [def]: https://www.adventofcode.com/2020
 
-p
