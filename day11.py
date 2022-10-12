@@ -1,16 +1,14 @@
-from copy import deepcopy
-from rich import print
-from rich import pretty
-from rich import traceback
 from dataclasses import dataclass
+from itertools import product
+from rich import print, pretty, traceback
 
 pretty.install()
 traceback.install()
 
-with open("day11.txt") as file:
-    ferry = file.read()
+with open("day11.txt", encoding="utf-8") as file:
+    FERRY = file.read()
 
-test_ferry = """L.LL.LL.LL
+TEST_FERRY = """L.LL.LL.LL
 LLLLLLL.LL
 L.L.L..L..
 LLLL.LL.LL
@@ -22,14 +20,22 @@ L.LLLLLL.L
 L.LLLLL.LL"""
 
 
-# @dataclass
-class Seat_predict:
-    ferry_seats = list(list())
-    n_row = 0
-    n_col = 0
+@dataclass
+class Dir:
+    # simple int vector
+    row: int
+    col: int
+
+
+class SeatPredict:
+    """A class for figuring out where people will sit on a ferry"""
+
+    ferry_seats: list[list[str]]
+    n_row: int = 0
+    n_col: int = 0
 
     def __init__(self, ferry_str: str):
-        self.ferry_seats = [[c for c in line] for line in ferry_str.splitlines()]
+        self.ferry_seats = [list(line) for line in ferry_str.splitlines()]
         self.n_row = len(self.ferry_seats)
         self.n_col = len(self.ferry_seats[0])
         print(f"{self.n_row=}{self.n_col=} ")
@@ -38,151 +44,72 @@ class Seat_predict:
     def __repr__(self):
         return "".join(("".join(list(l)) + "\n" for l in self.ferry_seats))
 
-    def next_seat(self, row, col):
-        full = 0
+    def next_seat(self, row: int, col: int) -> str:
+        """Returns the next seat for part a ferry given a location row,col"""
+        full: int = (
+            0  # counter for the number of full seats inthe circle around row,col
+        )
 
-        spot = self.ferry_seats[row][col]
+        spot: str = self.ferry_seats[row][col]  # extracting type of seat
 
-        for i in range((row - 1), (row + 2)):
-            for j in range((col - 1), (col + 2)):
-                if 0 <= i < self.n_row and 0 <= j < self.n_col:
-                    seat = self.ferry_seats[i][j]
-
-                    if seat == "#":
-                        full += 1
+        # check the cells around row,col for how many #'s
+        # check boundaries
+        for i_row, j_col in product([-1, 0, 1], [-1, 0, 1]):
+            cond_1 = 0 <= row + i_row < self.n_row
+            cond_2 = 0 <= col + j_col < self.n_col
+            if cond_1 and cond_2:
+                seat = self.ferry_seats[row + i_row][col + j_col]
+                if seat == "#":
+                    full += 1
 
         # print(f"{spot=}, {full=}, {empty=} ")
-        if spot == ".":
-            return "."
-
-        if spot == "L":
-            if full == 0:
+        match spot, full:
+            case ".", _:
+                return "."
+            case "L", 0:
                 return "#"
-            else:
+            case "#", 0 | 1 | 2 | 3 | 4:
+                return "#"
+            case _:
                 return "L"
 
-        if spot == "#":
-            if full >= 5:
-                return "L"
-            else:
-                return "#"
-
-    def taken(self, row, col, direction):
-        """ "counts the number of emty seats that can be seen"""
-        full = 0
+    def taken(self, row: int, col: int, direction: Dir):
+        """counts the number of emty seats that can be seen"""
+        full: int = 0
         for i in range(1, max(self.n_row, self.n_col) // 2 + 1):
-            irow = row - i * direction[0]
-            icol = col - i * direction[1]
-            print(f"{i=}, {irow=}, {icol=}, {direction=}, {row=}, {col=}")
-            if 0 <= irow < self.n_row and 0 <= icol < self.n_col:
+            irow = row - i * direction.row
+            icol = col - i * direction.col
+            # print(f"{i=}, {irow=}, {icol=}, {direction=}, {row=}, {col=}")
+            valid_seat = 0 <= irow < self.n_row and 0 <= icol < self.n_col
+            if valid_seat:
                 if self.ferry_seats[irow][icol] == "#":
+                    # found a full seat
                     full += 1
                     break
                 if self.ferry_seats[irow][icol] == "L":
+                    # found an empyt seat so stop looking
                     break
         return full
 
     def next_seat_B(self, row, col):
         full: int = 0
-        full2: int = 0
         spot = self.ferry_seats[row][col]
-        for ud in [-1, 0, 1]:
-            for rl in [-1, 0, 1]:
-                if not (ud == 0 and rl == 0):
-                    full2 += self.taken(row, col, [ud, rl])
-        # case1 up
+        for col_dir in [-1, 0, 1]:
+            for row_dir in [-1, 0, 1]:
+                if not (row_dir == 0 and col_dir == 0):
+                    full += self.taken(row, col, Dir(col_dir, row_dir))
 
-        for irow in range(0, row)[::-1]:
-            if self.ferry_seats[irow][col] == "#":
-                full += 1
-                break
-            if self.ferry_seats[irow][col] == "L":
-                break
-
-        # case upright
-        for irow in range(0, row)[::-1]:
-            icol = col + row - irow
-            if 0 <= icol < self.n_col:
-                if self.ferry_seats[irow][icol] == "#":
-                    full += 1
-                    break
-                if self.ferry_seats[irow][icol] == "L":
-                    break
-
-        # case upleft
-
-        for irow in range(0, row)[::-1]:
-            icol = col - row + irow
-            if 0 <= icol < self.n_col:
-                if self.ferry_seats[irow][icol] == "#":
-                    full += 1
-                    break
-                if self.ferry_seats[irow][icol] == "L":
-                    break
-
-        # case Down
-        for irow in range(row + 1, self.n_row):
-            if self.ferry_seats[irow][col] == "#":
-                full += 1
-                break
-            if self.ferry_seats[irow][col] == "L":
-                break
-
-        # left
-        for icol in range(0, col)[::-1]:
-            if self.ferry_seats[row][icol] == "#":
-                full += 1
-                break
-            if self.ferry_seats[row][icol] == "L":
-                break
-
-        # right
-        for icol in range(col + 1, self.n_col):
-            if self.ferry_seats[row][icol] == "#":
-                full += 1
-                break
-            if self.ferry_seats[row][icol] == "L":
-                break
-
-        # down right
-        for irow in range(row + 1, self.n_row):
-            icol = col + irow - row
-            if 0 <= icol < self.n_col:
-                if self.ferry_seats[irow][icol] == "#":
-                    full += 1
-                    break  # down left
-                if self.ferry_seats[irow][icol] == "L":
-                    break
-
-        # down left
-        for irow in range(row + 1, self.n_row):
-            icol = col - irow + row
-            if 0 <= icol < self.n_col:
-                if self.ferry_seats[irow][icol] == "#":
-                    full += 1
-                    break  # down left
-                if self.ferry_seats[irow][icol] == "L":
-                    break
-        # print(f"{spot=}, {full=}, {self.n_row=} ")
-
-        assert full == full2, print(full, full2)
-        if spot == ".":
-            return "."
-
-        elif spot == "L":
-            if full == 0:
+        match spot, full:
+            case ".", _:
+                return "."
+            case "L", 0:
                 return "#"
-            else:
+            case "#", 0 | 1 | 2 | 3 | 4:
+                return "#"
+            case _:
                 return "L"
 
-        elif spot == "#":
-            if full >= 5:
-                return "L"
-            else:
-                return "#"
-
-        else:
-            raise NotImplementedError("can't get here")
+        raise NotImplementedError("can't get here")
 
     def stabilize(self, part="part_a"):
         if part == "part_a":
@@ -199,7 +126,7 @@ class Seat_predict:
             ]
             if temp == self.ferry_seats:
                 break
-            print(self)
+            # print(self)
             self.ferry_seats = temp
 
         print(self)
@@ -209,22 +136,32 @@ class Seat_predict:
         )
 
 
-my_test_ferry = Seat_predict(test_ferry)
+if __name__ == "__main__":
 
-# print(my_test_ferry.stabilize())
+    my_test_ferry = SeatPredict(TEST_FERRY)
 
-my_ferry = Seat_predict(ferry)
+    result = my_test_ferry.stabilize()
+    print("part a test should be 37== ", result)
+    assert result == 37
+    my_ferry = SeatPredict(FERRY)
 
-# print(my_ferry.stabilize())
+    result = my_ferry.stabilize()
+    print(f"part a data: {result} which should be 2249")
+    assert result == 2249
+    TEST_FERRY3 = """LL#LL
+    #LLL#
+    #L#L#
+    #LLL# 
+    #L#L#
+    """
 
-test_ferry3 = """LL#LL
-#LLL#
-#L#L#
-#LLL# 
-#L#L#
-"""
+    my_test_ferry3 = SeatPredict(TEST_FERRY3)
+    print(my_test_ferry3.next_seat_B(2, 2))
 
-my_test_ferry3 = Seat_predict(test_ferry3)
-print(my_test_ferry3.next_seat_B(2, 2))
-print(my_test_ferry.stabilize(part="part_b"))
-# print(my_ferry.stabilize(part="part_b"))
+    my_test_ferry_b = SeatPredict(TEST_FERRY)
+    result_test_b = my_test_ferry_b.stabilize(part="part_b")
+    print(f"{result_test_b=} ")
+    assert result_test_b == 26
+
+    my_ferry_b = SeatPredict(FERRY)
+    print(my_ferry_b.stabilize(part="part_b"))
