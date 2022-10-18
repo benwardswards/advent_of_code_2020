@@ -69,7 +69,6 @@ def preamble2(data: list[int], value: int):
                 return min(sublist) + max(sublist)
 
 
-assert preamble2(testdata, test_nosum) == 62
-print(
-    f"The sum of min and max of the sublist that adds to value is {preamble2(data, nosum)}"
-)
+result = preamble2(testdata, test_nosum)
+assert result == 62
+print(f"The sum of min and max of the sublist that adds to value is {result}")

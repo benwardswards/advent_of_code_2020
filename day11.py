@@ -42,12 +42,13 @@ class SeatPredict:
         print(self)
 
     def __repr__(self):
-        return "".join(("".join(list(l)) + "\n" for l in self.ferry_seats))
+        return "".join(("".join(list(li)) + "\n" for li in self.ferry_seats))
 
     def next_seat(self, row: int, col: int) -> str:
-        """Returns the next seat for part a ferry given a location row,col"""
+        """Returns the next seat for ferry_A given a location row,col"""
         full: int = (
-            0  # counter for the number of full seats inthe circle around row,col
+            0  # counter for the number of full seats inthe circle
+            # round row,col
         )
 
         spot: str = self.ferry_seats[row][col]  # extracting type of seat
@@ -74,9 +75,10 @@ class SeatPredict:
                 return "L"
 
     def taken(self, row: int, col: int, direction: Dir):
-        """counts the number of emty seats that can be seen"""
+        """counts the number of"""
         full: int = 0
-        for i in range(1, max(self.n_row, self.n_col) // 2 + 1):
+        seats_in_direction = max(self.n_row, self.n_col) // 2 + 1
+        for i in range(1, seats_in_direction):
             irow = row - i * direction.row
             icol = col - i * direction.col
             # print(f"{i=}, {irow=}, {icol=}, {direction=}, {row=}, {col=}")
@@ -151,7 +153,7 @@ if __name__ == "__main__":
     TEST_FERRY3 = """LL#LL
     #LLL#
     #L#L#
-    #LLL# 
+    #LLL#
     #L#L#
     """
 
