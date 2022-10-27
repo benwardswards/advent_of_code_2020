@@ -15,29 +15,29 @@ class Memory:
 
     def __init__(self, game_list):
         self.game_start = game_list
-        self.last_played = defaultdict(lambda: -1)
+        self.last_played = dict()
         for turn, number in enumerate(game_list):
             self.last_played[number] = turn
         self.last = 0  # instiallizing the game
 
     def run(self, total: int):
         for turn in range(len(self.game_start) + 1, total):
-            if (last_position := self.last_played[self.last]) != -1:
-                age = turn - last_position - 1
-            else:
+            last_position = self.last_played.get(self.last)
+            if last_position is None:
                 age = 0
+            else:
+                age = turn - last_position - 1
 
             self.last_played[self.last] = turn - 1
             self.last = age
-
+            # print(self.last)
         return self.last
 
 
 memory = Memory(TEST1)
 print(memory)
 
-print(memory.run(10))
-
+assert memory.run(10) == 0, memory.run(10)
 print([0, 3, 6, 0, 3, 3, 1, 0, 4, 0])
 
 assert Memory([1, 3, 2]).run(2020) == 1, Memory([1, 3, 2]).run(2020)
